@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // A student can read any profile (for future features) but only write their own
+    match /students/{studentId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == studentId;
+    }
+
+    // Anyone signed in can read opportunities. Locking down writes to admins
+    // is left as a TODO once you have an admin flag on student docs -
+    // for the MVP, keep this open only to your own account while you seed data,
+    // then tighten it before public launch.
+    match /opportunities/{opportunityId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // A student can only read/write their own applications
+    match /applications/{applicationId} {
+      allow read, write: if request.auth != null &&
+        request.resource.data.studentId == request.auth.uid;
+      allow read: if request.auth != null &&
+        resource.data.studentId == request.auth.uid;
+    }
+  }
+}
