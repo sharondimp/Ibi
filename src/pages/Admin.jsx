@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
-import { collection, addDoc, onSnapshot, serverTimestamp, deleteDoc, doc } from 'firebase/firestore'
+import { collection, addDoc, onSnapshot, serverTimestamp, deleteDoc, doc, updateDoc, query, where } from 'firebase/firestore'
 import { db } from '../firebase'
+import { useAuth } from '../context/AuthContext'
 
 const EMPTY = {
   title: '', org: '', type: 'Internship', location: '', mode: 'On-site',
@@ -9,16 +10,45 @@ const EMPTY = {
 }
 
 export default function Admin() {
+  const { profile } = useAuth()
   const [form, setForm] = useState(EMPTY)
   const [opportunities, setOpportunities] = useState([])
+  const [pendingOrgs, setPendingOrgs] = useState([])
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
+    if (!profile?.isAdmin) return
     const unsub = onSnapshot(collection(db, 'opportunities'), (snap) => {
       setOpportunities(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     })
     return unsub
-  }, [])
+  }, [profile])
+
+  useEffect(() => {
+    if (!profile?.isAdmin) return
+    const q = query(collection(db, 'organizations'), where('status', '==', 'pending'))
+    const unsub = onSnapshot(q, (snap) => {
+      setPendingOrgs(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    })
+    return unsub
+  }, [profile])
+
+  async function handleApprove(orgId) {
+    await updateDoc(doc(db, 'organizations', orgId), { verified: true, status: 'approved' })
+    // TODO: trigger the verification email here (see note below the form).
+  }
+
+  async function handleReject(orgId) {
+    await updateDoc(doc(db, 'organizations', orgId), { verified: false, status: 'rejected' })
+  }
+
+  if (!profile?.isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-6 py-32">
+        <p className="text-paper-dim">You don't have access to this page.</p>
+      </div>
+    )
+  }
 
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }))
@@ -107,6 +137,42 @@ export default function Admin() {
       </form>
 
       <div>
+        {pendingOrgs.length > 0 && (
+          <div className="mb-10">
+            <h2 className="font-display font-semibold text-xl mb-5">
+              Pending organizations <span className="text-paper-dim font-normal text-base">({pendingOrgs.length})</span>
+            </h2>
+            <div className="space-y-3">
+              {pendingOrgs.map((org) => (
+                <div key={org.id} className="card !p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="font-medium text-sm">{org.name}</div>
+                      <div className="text-xs text-paper-dim mt-0.5">{org.email}</div>
+                      {org.hasCAC ? (
+                        <div className="text-xs text-paper-dim mt-1">CAC: {org.cacNumber}</div>
+                      ) : (
+                        <>
+                          <div className="text-xs text-paper-dim mt-1">No CAC · {org.orgType}</div>
+                          <div className="text-xs text-paper-dim">Verify via: {org.contactInfo}</div>
+                        </>
+                      )}
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      <button onClick={() => handleApprove(org.id)} className="btn-secondary !py-2 !px-3 !text-xs">
+                        Approve
+                      </button>
+                      <button onClick={() => handleReject(org.id)} className="text-coral text-xs font-mono">
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <h2 className="font-display font-semibold text-xl mb-5">
           Live opportunities <span className="text-paper-dim font-normal text-base">({opportunities.length})</span>
         </h2>

@@ -3,9 +3,9 @@ import { collection, query, where, onSnapshot, doc, updateDoc, getDoc } from 'fi
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 
-const STAGES = ['saved', 'applied', 'assessment', 'interview', 'offer', 'rejected']
+const STAGES = ['saved', 'applied', 'shortlisted', 'assessment', 'interview', 'offer', 'rejected']
 const STAGE_LABELS = {
-  saved: 'Saved', applied: 'Applied', assessment: 'Assessment',
+  saved: 'Saved', applied: 'Applied', shortlisted: 'Shortlisted', assessment: 'Assessment',
   interview: 'Interview', offer: 'Offer', rejected: 'Rejected',
 }
 

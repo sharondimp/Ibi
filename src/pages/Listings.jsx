@@ -39,26 +39,28 @@ export default function Listings() {
       .sort((a, b) => (b.match?.score || 0) - (a.match?.score || 0))
   }, [opportunities, profile, filters])
 
-  async function handleSave(opportunityId) {
+  async function handleSave(op) {
     if (!user) return
-    await setDoc(doc(db, 'applications', `${user.uid}_${opportunityId}`), {
+    await setDoc(doc(db, 'applications', `${user.uid}_${op.id}`), {
       studentId: user.uid,
-      opportunityId,
+      opportunityId: op.id,
+      orgId: op.orgId || '',
       status: 'saved',
       updatedAt: serverTimestamp(),
     }, { merge: true })
-    setApplications((a) => ({ ...a, [opportunityId]: a[opportunityId] || 'saved' }))
+    setApplications((a) => ({ ...a, [op.id]: a[op.id] || 'saved' }))
   }
 
-  async function handleApply(opportunityId) {
+  async function handleApply(op) {
     if (!user) return
-    await setDoc(doc(db, 'applications', `${user.uid}_${opportunityId}`), {
+    await setDoc(doc(db, 'applications', `${user.uid}_${op.id}`), {
       studentId: user.uid,
-      opportunityId,
+      opportunityId: op.id,
+      orgId: op.orgId || '',
       status: 'applied',
       updatedAt: serverTimestamp(),
     }, { merge: true })
-    setApplications((a) => ({ ...a, [opportunityId]: 'applied' }))
+    setApplications((a) => ({ ...a, [op.id]: 'applied' }))
   }
 
   return (
@@ -109,8 +111,8 @@ export default function Listings() {
               match={match}
               saved={!!applications[op.id]}
               applied={applications[op.id] === 'applied' || ['assessment', 'interview', 'offer'].includes(applications[op.id])}
-              onSave={() => handleSave(op.id)}
-              onApply={() => handleApply(op.id)}
+              onSave={() => handleSave(op)}
+              onApply={() => handleApply(op)}
             />
           ))}
         </div>

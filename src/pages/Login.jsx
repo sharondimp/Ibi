@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 
 export default function Login() {
@@ -15,8 +17,11 @@ export default function Login() {
     setError('')
     setLoading(true)
     try {
-      await login(email, password)
-      navigate('/listings')
+      const cred = await login(email, password)
+      // Check which collection this uid belongs to, so orgs land on their
+      // status page instead of the student listings page.
+      const orgSnap = await getDoc(doc(db, 'organizations', cred.user.uid))
+      navigate(orgSnap.exists() ? '/org-dashboard' : '/listings')
     } catch (err) {
       setError(err.message.replace('Firebase: ', ''))
     } finally {

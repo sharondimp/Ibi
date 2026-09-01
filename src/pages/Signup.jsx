@@ -94,6 +94,9 @@ export default function Signup() {
         <p className="text-center text-sm text-paper-dim mt-5">
           Already have an account? <Link to="/login" className="text-gold">Log in</Link>
         </p>
+        <p className="text-center text-sm text-paper-dim mt-2">
+          Hiring or offering SIWES? <Link to="/org-signup" className="text-gold">Post as an organization</Link>
+        </p>
       </form>
     </div>
   )
