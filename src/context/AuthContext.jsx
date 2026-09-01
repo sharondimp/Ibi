@@ -14,16 +14,31 @@ const AuthContext = createContext(null)
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
+  const [accountType, setAccountType] = useState(null) // 'student' | 'organization'
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser)
       if (firebaseUser) {
-        const snap = await getDoc(doc(db, 'students', firebaseUser.uid))
-        setProfile(snap.exists() ? snap.data() : null)
+        // Check students first, then organizations — a uid only ever lives in one.
+        const studentSnap = await getDoc(doc(db, 'students', firebaseUser.uid))
+        if (studentSnap.exists()) {
+          setProfile(studentSnap.data())
+          setAccountType('student')
+        } else {
+          const orgSnap = await getDoc(doc(db, 'organizations', firebaseUser.uid))
+          if (orgSnap.exists()) {
+            setProfile(orgSnap.data())
+            setAccountType('organization')
+          } else {
+            setProfile(null)
+            setAccountType(null)
+          }
+        }
       } else {
         setProfile(null)
+        setAccountType(null)
       }
       setLoading(false)
     })
@@ -45,6 +60,30 @@ export function AuthProvider({ children }) {
     }
     await setDoc(doc(db, 'students', cred.user.uid), studentDoc)
     setProfile(studentDoc)
+    setAccountType('student')
+    return cred.user
+  }
+
+  // hasCAC: true/false. cacNumber only used when hasCAC is true.
+  // orgType/contactInfo only used when hasCAC is false.
+  async function signupOrg({ name, email, password, hasCAC, cacNumber, orgType, contactInfo }) {
+    const cred = await createUserWithEmailAndPassword(auth, email, password)
+    await updateProfile(cred.user, { displayName: name })
+
+    const orgDoc = {
+      name,
+      email,
+      hasCAC,
+      cacNumber: hasCAC ? cacNumber : '',
+      orgType: hasCAC ? '' : orgType,
+      contactInfo: hasCAC ? '' : contactInfo,
+      verified: false,
+      status: 'pending',
+      createdAt: serverTimestamp(),
+    }
+    await setDoc(doc(db, 'organizations', cred.user.uid), orgDoc)
+    setProfile(orgDoc)
+    setAccountType('organization')
     return cred.user
   }
 
@@ -56,7 +95,7 @@ export function AuthProvider({ children }) {
     return signOut(auth)
   }
 
-  const value = { user, profile, loading, signup, login, logout }
+  const value = { user, profile, accountType, loading, signup, signupOrg, login, logout }
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
