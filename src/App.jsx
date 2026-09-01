@@ -7,6 +7,8 @@ import Login from './pages/Login'
 import Listings from './pages/Listings'
 import Tracker from './pages/Tracker'
 import Admin from './pages/Admin'
+import OrgSignup from './pages/OrgSignup'
+import OrgDashboard from './pages/OrgDashboard'
 
 export default function App() {
   return (
@@ -19,6 +21,8 @@ export default function App() {
         <Route path="/listings" element={<Listings />} />
         <Route path="/tracker" element={<Tracker />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/org-signup" element={<OrgSignup />} />
+        <Route path="/org-dashboard" element={<OrgDashboard />} />
       </Routes>
     </>
   )
