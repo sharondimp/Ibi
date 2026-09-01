@@ -3,7 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function Navbar() {
-  const { user, profile, logout } = useAuth()
+  const { user, profile, accountType, logout } = useAuth()
   const navigate = useNavigate()
 
   const linkClass = ({ isActive }) =>
@@ -24,9 +24,10 @@ export default function Navbar() {
       </Link>
 
       <div className="hidden md:flex items-center gap-8">
-        <NavLink to="/listings" className={linkClass}>Opportunities</NavLink>
-        {user && <NavLink to="/tracker" className={linkClass}>Tracker</NavLink>}
-        {user && <NavLink to="/admin" className={linkClass}>Admin</NavLink>}
+        {accountType !== 'organization' && <NavLink to="/listings" className={linkClass}>Opportunities</NavLink>}
+        {accountType === 'student' && <NavLink to="/tracker" className={linkClass}>Tracker</NavLink>}
+        {accountType === 'organization' && <NavLink to="/org-dashboard" className={linkClass}>Dashboard</NavLink>}
+        {profile?.isAdmin && <NavLink to="/admin" className={linkClass}>Admin</NavLink>}
       </div>
 
       <div className="flex items-center gap-3">
